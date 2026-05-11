@@ -659,25 +659,62 @@ def get_master_resume_content():
 st.title("📄 Paula's Resume Generator")
 st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
 
-job_url = st.text_input("Job Posting URL *", placeholder="https://www.linkedin.com/jobs/view/...")
-additional_context = st.text_area("Additional Context (Optional)", placeholder="E.g., 'Emphasize my laboratory skills' or 'Transitioning from QA to lab work'", height=100)
+# Input method selection
+input_method = st.radio(
+    "How would you like to provide the job posting?",
+    ["Paste job description", "Job posting URL"],
+    horizontal=True,
+    label_visibility="collapsed"
+)
+
+if input_method == "Job posting URL":
+    job_input = st.text_input(
+        "Job Posting URL",
+        placeholder="https://www.seek.com.au/job/...",
+        help="Note: LinkedIn URLs may not work due to access restrictions. Use 'Paste job description' instead."
+    )
+    is_url = True
+else:
+    job_input = st.text_area(
+        "Paste Job Description",
+        placeholder="Paste the full job description here...\n\nInclude job title, responsibilities, requirements, etc.",
+        height=250,
+        help="Copy and paste the entire job posting from LinkedIn, Seek, Indeed, or any job board"
+    )
+    is_url = False
+
+additional_context = st.text_area(
+    "Additional Context (Optional)", 
+    placeholder="E.g., 'Emphasize my laboratory skills' or 'Transitioning from QA to lab work'", 
+    height=100
+)
 
 if st.button("🚀 Generate Tailored Resume"):
-    if not job_url:
-        st.error("Please enter job URL")
+    if not job_input:
+        st.error("Please provide a job posting (URL or paste description)")
     else:
         # Create progress bar
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        # Step 1: Analyze job posting
-        status_text.markdown("**<span style='color: #1a202c;'>🔍 Step 1/3:</span>** <span style='color: #1a202c;'>Analyzing job posting...</span>", unsafe_allow_html=True)
+        # Step 1: Get job content
+        status_text.markdown("**<span style='color: #1a202c;'>🔍 Step 1/3:</span>** <span style='color: #1a202c;'>Processing job posting...</span>", unsafe_allow_html=True)
         progress_bar.progress(10)
         
-        job_content = scrape_job_posting(job_url)
-        if not job_content:
-            st.error("Failed to retrieve job posting. Please check the URL.")
-            st.stop()
+        if is_url:
+            # Try to scrape URL
+            job_content = scrape_job_posting(job_input)
+            if not job_content:
+                st.error("❌ Failed to retrieve job posting from URL. LinkedIn and some sites block automated access. Please use 'Paste job description' instead.")
+                st.info("💡 Copy the job description from the website and paste it using the text area option above.")
+                progress_bar.empty()
+                status_text.empty()
+                st.stop()
+        else:
+            # Use pasted content directly
+            job_content = job_input.strip()
+            if len(job_content) < 100:
+                st.warning("⚠️ The job description seems very short. Make sure you pasted the full posting.")
         
         progress_bar.progress(30)
         job_analysis = analyze_job_posting(job_content, st.session_state.api_key)
