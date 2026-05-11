@@ -11,7 +11,7 @@ from datetime import datetime
 
 # Page config
 st.set_page_config(
-    page_title="Paula's Resume Generator Love Ayaz",
+    page_title="Paula's Resume Generator",
     page_icon="📄",
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -330,7 +330,7 @@ if 'api_key' not in st.session_state:
 
 # API Key Gate
 if not st.session_state.api_key_validated:
-    st.title("📄 Paula's Resume Generator Love Ayaz")
+    st.title("📄 Paula's Resume Generator")
     st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
     
     api_key_input = st.text_input("Enter your Anthropic API Key", type="password", placeholder="sk-ant-api03-...")
@@ -350,7 +350,7 @@ if not st.session_state.api_key_validated:
     st.stop()
 
 # Main App
-st.title("📄 Paula's Resume Generator Love Ayaz")
+st.title("📄 Paula's Resume Generator")
 st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
 
 job_url = st.text_input("Job Posting URL *", placeholder="https://www.linkedin.com/jobs/view/...")
