@@ -330,7 +330,7 @@ if 'api_key' not in st.session_state:
 
 # API Key Gate
 if not st.session_state.api_key_validated:
-    st.title("📄 AI Resume Tailor")
+    st.title("📄 Paula's Resume Generator Love Ayaz")
     st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
     
     api_key_input = st.text_input("Enter your Anthropic API Key", type="password", placeholder="sk-ant-api03-...")
