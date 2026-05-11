@@ -456,7 +456,7 @@ if st.button("🚀 Generate Tailored Resume"):
         status_text = st.empty()
         
         # Step 1: Analyze job posting
-        status_text.markdown("**🔍 Step 1/3:** Analyzing job posting...")
+        status_text.markdown("**<span style='color: #1a202c;'>🔍 Step 1/3:</span>** <span style='color: #1a202c;'>Analyzing job posting...</span>", unsafe_allow_html=True)
         progress_bar.progress(10)
         
         job_content = scrape_job_posting(job_url)
@@ -469,10 +469,10 @@ if st.button("🚀 Generate Tailored Resume"):
         
         if job_analysis:
             progress_bar.progress(40)
-            status_text.markdown("**✅ Step 1/3:** Job posting analyzed!")
+            status_text.markdown("**<span style='color: #1a202c;'>✅ Step 1/3:</span>** <span style='color: #1a202c;'>Job posting analyzed!</span>", unsafe_allow_html=True)
             
             # Step 2: Load master resume
-            status_text.markdown("**📄 Step 2/3:** Loading your master resume...")
+            status_text.markdown("**<span style='color: #1a202c;'>📄 Step 2/3:</span>** <span style='color: #1a202c;'>Loading your master resume...</span>", unsafe_allow_html=True)
             progress_bar.progress(50)
             
             original_resume = get_master_resume_content()
@@ -481,17 +481,17 @@ if st.button("🚀 Generate Tailored Resume"):
                 st.stop()
             
             progress_bar.progress(60)
-            status_text.markdown("**✅ Step 2/3:** Master resume loaded!")
+            status_text.markdown("**<span style='color: #1a202c;'>✅ Step 2/3:</span>** <span style='color: #1a202c;'>Master resume loaded!</span>", unsafe_allow_html=True)
             
             # Step 3: Generate tailored resume
-            status_text.markdown("**✨ Step 3/3:** Generating tailored resume (30-60 seconds)...")
+            status_text.markdown("**<span style='color: #1a202c;'>✨ Step 3/3:</span>** <span style='color: #1a202c;'>Generating tailored resume (30-60 seconds)...</span>", unsafe_allow_html=True)
             progress_bar.progress(65)
             
             tailored_resume = generate_tailored_resume(original_resume, job_analysis, additional_context, st.session_state.api_key)
             
             if tailored_resume:
                 progress_bar.progress(90)
-                status_text.markdown("**✅ Step 3/3:** Resume generated!")
+                status_text.markdown("**<span style='color: #1a202c;'>✅ Step 3/3:</span>** <span style='color: #1a202c;'>Resume generated!</span>", unsafe_allow_html=True)
                 
                 # Create document
                 doc = create_docx_from_text(tailored_resume)
@@ -500,7 +500,7 @@ if st.button("🚀 Generate Tailored Resume"):
                 doc_bytes.seek(0)
                 
                 progress_bar.progress(100)
-                status_text.markdown("**🎉 Complete!** Your resume is ready to download.")
+                status_text.markdown("**<span style='color: #1a202c;'>🎉 Complete!</span>** <span style='color: #1a202c;'>Your resume is ready to download.</span>", unsafe_allow_html=True)
                 
                 st.success("✅ Resume generated successfully!")
                 st.download_button(
