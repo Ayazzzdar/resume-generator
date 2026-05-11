@@ -389,12 +389,14 @@ if not st.session_state.api_key_validated:
 def get_master_resume_content():
     """Load and extract master resume content"""
     resume_data = None
+    source = None
     
     # Try local file first
     if os.path.exists(MASTER_RESUME_PATH):
         try:
             with open(MASTER_RESUME_PATH, 'rb') as f:
                 resume_data = f.read()
+                source = "local file"
         except Exception as e:
             st.error(f"Error loading local resume: {str(e)}")
     
@@ -403,20 +405,40 @@ def get_master_resume_content():
         try:
             import base64
             resume_data = base64.b64decode(st.secrets["master_resume_base64"])
+            source = "secrets"
         except Exception as e:
             st.error(f"Error loading resume from secrets: {str(e)}")
     
-    # Extract text from resume data
-    if resume_data:
-        try:
-            doc = Document(io.BytesIO(resume_data))
-            content = '\n'.join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
-            return content
-        except Exception as e:
-            st.error(f"Error reading master resume: {str(e)}")
-            return None
+    # If no resume data found
+    if not resume_data:
+        st.error("❌ Master resume not found. Please upload master_resume.docx to your GitHub repository.")
+        st.info("📁 The file should be in the same folder as the Python script.")
+        return None
     
-    return None
+    # Extract text from resume data
+    try:
+        # Validate it's a proper Word document
+        doc = Document(io.BytesIO(resume_data))
+        
+        # Extract all text
+        paragraphs = []
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if text:
+                paragraphs.append(text)
+        
+        if not paragraphs:
+            st.error("❌ Master resume appears to be empty. Please check the file.")
+            return None
+        
+        content = '\n'.join(paragraphs)
+        st.success(f"✅ Master resume loaded successfully from {source} ({len(paragraphs)} paragraphs, {len(content)} characters)")
+        return content
+        
+    except Exception as e:
+        st.error(f"❌ Error reading master resume: {str(e)}")
+        st.info("💡 Make sure the file is a valid .docx (Microsoft Word) document, not .doc or PDF.")
+        return None
 
 # Main App
 st.title("📄 Paula's Resume Generator")
