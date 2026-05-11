@@ -11,7 +11,7 @@ from datetime import datetime
 
 # Page config
 st.set_page_config(
-    page_title="Paula's Resume Generator",
+    page_title="AI Resume Tailor",
     page_icon="📄",
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -330,7 +330,7 @@ if 'api_key' not in st.session_state:
 
 # API Key Gate
 if not st.session_state.api_key_validated:
-    st.title("📄 Paula's Resume Generator")
+    st.title("📄 AI Resume Tailor")
     st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
     
     api_key_input = st.text_input("Enter your Anthropic API Key", type="password", placeholder="sk-ant-api03-...")
@@ -349,19 +349,49 @@ if not st.session_state.api_key_validated:
             st.error("❌ Enter valid API key")
     st.stop()
 
+# Check if master resume exists
+def load_master_resume():
+    """Load master resume from file or secrets"""
+    # Try local file first
+    if os.path.exists(MASTER_RESUME_PATH):
+        try:
+            with open(MASTER_RESUME_PATH, 'rb') as f:
+                return f
+        except:
+            pass
+    
+    # Try Streamlit secrets
+    if hasattr(st, 'secrets') and "master_resume_base64" in st.secrets:
+        try:
+            import base64
+            resume_data = base64.b64decode(st.secrets["master_resume_base64"])
+            return io.BytesIO(resume_data)
+        except:
+            pass
+    
+    return None
+
+def get_master_resume_content():
+    """Get master resume content"""
+    resume_file = load_master_resume()
+    if resume_file:
+        try:
+            doc = Document(resume_file)
+            return '\n'.join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
+        except Exception as e:
+            st.error(f"Error reading master resume: {str(e)}")
+    return None
+
 # Main App
 st.title("📄 Paula's Resume Generator")
 st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
 
 job_url = st.text_input("Job Posting URL *", placeholder="https://www.linkedin.com/jobs/view/...")
-uploaded_resume = st.file_uploader("Upload Your Resume (.docx) *", type=['docx'], help="Max size: 10MB | Format: Microsoft Word")
-additional_context = st.text_area("Additional Context (Optional)", placeholder="E.g., 'Emphasize my leadership skills' or 'Transitioning from sales to marketing'", height=100)
+additional_context = st.text_area("Additional Context (Optional)", placeholder="E.g., 'Emphasize my laboratory skills' or 'Transitioning from QA to lab work'", height=100)
 
 if st.button("🚀 Generate Tailored Resume"):
     if not job_url:
         st.error("Please enter job URL")
-    elif not uploaded_resume:
-        st.error("Please upload resume")
     else:
         with st.spinner("Analyzing job posting..."):
             job_content = scrape_job_posting(job_url)
@@ -369,8 +399,11 @@ if st.button("🚀 Generate Tailored Resume"):
                 job_analysis = analyze_job_posting(job_content, st.session_state.api_key)
         
         if job_analysis:
-            with st.spinner("Processing resume..."):
-                original_resume = extract_resume_content(uploaded_resume)
+            with st.spinner("Loading your master resume..."):
+                original_resume = get_master_resume_content()
+                if not original_resume:
+                    st.error("Master resume not found. Please add master_resume.docx to your repository or configure Streamlit secrets.")
+                    st.stop()
             
             if original_resume:
                 with st.spinner("Generating tailored resume..."):
