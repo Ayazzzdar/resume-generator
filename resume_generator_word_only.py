@@ -221,11 +221,19 @@ st.markdown("""
     [data-testid="stMarkdownContainer"] p,
     [data-testid="stMarkdownContainer"] strong,
     .element-container,
-    .stMarkdown {
+    .stMarkdown,
+    .stRadio,
+    .stRadio label,
+    .stRadio div,
+    .stRadio span,
+    [role="radiogroup"],
+    [role="radiogroup"] label,
+    [role="radiogroup"] div {
         opacity: 1 !important;
         visibility: visible !important;
         animation: none !important;
         transition: none !important;
+        color: #1a202c !important;
     }
     
     /* Progress bar styling */
@@ -660,12 +668,14 @@ st.title("📄 Paula's Resume Generator")
 st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
 
 # Input method selection
+st.markdown('<div style="opacity: 1 !important; animation: none !important;">', unsafe_allow_html=True)
 input_method = st.radio(
     "How would you like to provide the job posting?",
     ["Paste job description", "Job posting URL"],
     horizontal=True,
     label_visibility="collapsed"
 )
+st.markdown('</div>', unsafe_allow_html=True)
 
 if input_method == "Job posting URL":
     job_input = st.text_input(
