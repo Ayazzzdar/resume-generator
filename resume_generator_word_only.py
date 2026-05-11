@@ -22,14 +22,15 @@ MASTER_RESUME_PATH = "master_resume.docx"
 # Custom CSS for centered card design with gradient
 st.markdown("""
 <style>
-    /* Hide Streamlit branding */
+    /* Hide Streamlit branding and elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    .stDeployButton {display: none;}
     
     /* Purple gradient background */
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     }
     
     /* Center everything */
@@ -39,12 +40,9 @@ st.markdown("""
         padding-bottom: 3rem;
     }
     
-    /* White card container */
-    .card {
-        background: white;
-        border-radius: 20px;
-        padding: 3rem;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    /* Remove default streamlit padding/margins */
+    .main > div {
+        padding-top: 0;
     }
     
     /* Header styling */
@@ -63,26 +61,77 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     
-    /* Input styling */
-    .stTextInput > div > div > input,
+    /* White card background for inputs */
+    div[data-testid="stVerticalBlock"] > div {
+        background-color: white;
+        border-radius: 20px;
+        padding: 3rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    /* Input styling - white background with dark text */
+    .stTextInput > div > div > input {
+        background-color: white !important;
+        color: #1a202c !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        padding: 12px 16px !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder {
+        color: #a0aec0 !important;
+    }
+    
+    /* Text area styling */
     .stTextArea > div > div > textarea {
-        border-radius: 10px;
-        border: 2px solid #e2e8f0;
-        padding: 12px 16px;
+        background-color: white !important;
+        color: #1a202c !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        padding: 12px 16px !important;
+    }
+    
+    .stTextArea > div > div > textarea::placeholder {
+        color: #a0aec0 !important;
+    }
+    
+    /* Label text - dark on white background */
+    .stTextInput label,
+    .stTextArea label,
+    .stFileUploader label {
+        color: #1a202c !important;
+        font-weight: 600 !important;
+    }
+    
+    /* File uploader styling */
+    .stFileUploader > div {
+        background-color: white !important;
+    }
+    
+    .stFileUploader section {
+        background-color: #f7fafc !important;
+        border: 2px dashed #e2e8f0 !important;
+        border-radius: 10px !important;
+    }
+    
+    .stFileUploader section button {
+        background-color: #667eea !important;
+        color: white !important;
+        border-radius: 8px !important;
     }
     
     /* Button styling */
     .stButton > button {
         width: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        font-weight: 600;
-        padding: 1rem 2rem;
-        border-radius: 10px;
-        border: none;
-        font-size: 1.1rem;
-        margin-top: 1rem;
-        transition: all 0.3s;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 1rem 2rem !important;
+        border-radius: 10px !important;
+        border: none !important;
+        font-size: 1.1rem !important;
+        margin-top: 1rem !important;
+        transition: all 0.3s !important;
     }
     
     .stButton > button:hover {
@@ -96,6 +145,8 @@ st.markdown("""
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
         margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e2e8f0;
     }
     
     .feature-badge {
@@ -116,20 +167,45 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         font-weight: bold;
+        font-size: 14px;
     }
-    
-    /* File uploader styling */
-    .stFileUploader {
-        margin-bottom: 1rem;
-    }
-    
-    /* Hide Streamlit elements */
-    .stDeployButton {display: none;}
     
     /* API Key gate styling */
     .api-gate {
         text-align: center;
         padding: 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    /* Remove any fade-in animations */
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+    
+    .stButton > button,
+    .stButton > button:hover {
+        transition: all 0.3s !important;
+    }
+    
+    /* Fix for any dark backgrounds appearing */
+    [data-testid="stAppViewContainer"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    /* Ensure all text is dark on white backgrounds */
+    .stMarkdown, p, span, div {
+        color: #1a202c !important;
+    }
+    
+    /* Footer text in white */
+    .footer-text {
+        color: white !important;
+        text-align: center;
+        padding: 2rem;
+        margin-top: 2rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -323,7 +399,6 @@ if 'api_key' not in st.session_state:
 
 # API Key Gate
 if not st.session_state.api_key_validated:
-    st.markdown('<div class="card api-gate">', unsafe_allow_html=True)
     st.markdown('<div class="main-header">📄 AI Resume Tailor</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Generate ATS-optimized resumes in seconds</div>', unsafe_allow_html=True)
     
@@ -333,8 +408,7 @@ if not st.session_state.api_key_validated:
         "Enter your Anthropic API Key",
         type="password",
         placeholder="sk-ant-api03-...",
-        help="Get your API key from console.anthropic.com",
-        label_visibility="collapsed"
+        help="Get your API key from console.anthropic.com"
     )
     
     if st.button("🚀 Start Using App"):
@@ -354,11 +428,9 @@ if not st.session_state.api_key_validated:
         else:
             st.error("❌ Please enter a valid Anthropic API key")
     
-    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 # Main App (centered card design)
-st.markdown('<div class="card">', unsafe_allow_html=True)
 
 # Header
 st.markdown('<div class="main-header">📄 AI Resume Tailor</div>', unsafe_allow_html=True)
@@ -470,11 +542,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
-
 # Footer
 st.markdown(
-    "<div style='text-align: center; color: white; padding: 2rem; margin-top: 2rem;'>"
+    "<div class='footer-text'>"
     "Built with Claude API | Tailor your resume for every opportunity"
     "</div>",
     unsafe_allow_html=True
