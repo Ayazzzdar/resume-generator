@@ -350,7 +350,7 @@ if not st.session_state.api_key_validated:
     st.stop()
 
 # Main App
-st.title("📄 AI Resume Tailor")
+st.title("📄 Paula's Resume Generator Love Ayaz")
 st.markdown('<p class="subtitle">Generate ATS-optimized resumes in seconds</p>', unsafe_allow_html=True)
 
 job_url = st.text_input("Job Posting URL *", placeholder="https://www.linkedin.com/jobs/view/...")
