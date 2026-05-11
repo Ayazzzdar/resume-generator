@@ -199,10 +199,46 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
-    /* Remove animations */
-    * {
+    /* FORCE remove all animations and fading - nuclear option */
+    *, *::before, *::after, div, p, span, h1, h2, h3, h4, h5, h6 {
+        animation: none !important;
         animation-duration: 0s !important;
-        transition-duration: 0.2s !important;
+        animation-delay: 0s !important;
+        transition: none !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    /* ONLY allow button hover transition */
+    .stButton button {
+        transition: transform 0.2s, box-shadow 0.2s !important;
+    }
+    
+    /* Force all text elements to be immediately visible */
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] strong,
+    .element-container,
+    .stMarkdown {
+        opacity: 1 !important;
+        visibility: visible !important;
+        animation: none !important;
+        transition: none !important;
+    }
+    
+    /* Progress bar styling */
+    .stProgress > div > div {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    /* Force status messages to appear instantly */
+    .stAlert, .stSuccess, .stError, .stInfo, .stWarning {
+        opacity: 1 !important;
+        visibility: visible !important;
+        animation: none !important;
+        transition: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -350,36 +386,36 @@ if not st.session_state.api_key_validated:
     st.stop()
 
 # Check if master resume exists
-def load_master_resume():
-    """Load master resume from file or secrets"""
+def get_master_resume_content():
+    """Load and extract master resume content"""
+    resume_data = None
+    
     # Try local file first
     if os.path.exists(MASTER_RESUME_PATH):
         try:
             with open(MASTER_RESUME_PATH, 'rb') as f:
-                return f
-        except:
-            pass
+                resume_data = f.read()
+        except Exception as e:
+            st.error(f"Error loading local resume: {str(e)}")
     
-    # Try Streamlit secrets
-    if hasattr(st, 'secrets') and "master_resume_base64" in st.secrets:
+    # Try Streamlit secrets if local file not found
+    if not resume_data and hasattr(st, 'secrets') and "master_resume_base64" in st.secrets:
         try:
             import base64
             resume_data = base64.b64decode(st.secrets["master_resume_base64"])
-            return io.BytesIO(resume_data)
-        except:
-            pass
+        except Exception as e:
+            st.error(f"Error loading resume from secrets: {str(e)}")
     
-    return None
-
-def get_master_resume_content():
-    """Get master resume content"""
-    resume_file = load_master_resume()
-    if resume_file:
+    # Extract text from resume data
+    if resume_data:
         try:
-            doc = Document(resume_file)
-            return '\n'.join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
+            doc = Document(io.BytesIO(resume_data))
+            content = '\n'.join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
+            return content
         except Exception as e:
             st.error(f"Error reading master resume: {str(e)}")
+            return None
+    
     return None
 
 # Main App
@@ -393,37 +429,70 @@ if st.button("🚀 Generate Tailored Resume"):
     if not job_url:
         st.error("Please enter job URL")
     else:
-        with st.spinner("Analyzing job posting..."):
-            job_content = scrape_job_posting(job_url)
-            if job_content:
-                job_analysis = analyze_job_posting(job_content, st.session_state.api_key)
+        # Create progress bar
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        # Step 1: Analyze job posting
+        status_text.markdown("**🔍 Step 1/3:** Analyzing job posting...")
+        progress_bar.progress(10)
+        
+        job_content = scrape_job_posting(job_url)
+        if not job_content:
+            st.error("Failed to retrieve job posting. Please check the URL.")
+            st.stop()
+        
+        progress_bar.progress(30)
+        job_analysis = analyze_job_posting(job_content, st.session_state.api_key)
         
         if job_analysis:
-            with st.spinner("Loading your master resume..."):
-                original_resume = get_master_resume_content()
-                if not original_resume:
-                    st.error("Master resume not found. Please add master_resume.docx to your repository or configure Streamlit secrets.")
-                    st.stop()
+            progress_bar.progress(40)
+            status_text.markdown("**✅ Step 1/3:** Job posting analyzed!")
             
-            if original_resume:
-                with st.spinner("Generating tailored resume..."):
-                    tailored_resume = generate_tailored_resume(original_resume, job_analysis, additional_context, st.session_state.api_key)
+            # Step 2: Load master resume
+            status_text.markdown("**📄 Step 2/3:** Loading your master resume...")
+            progress_bar.progress(50)
+            
+            original_resume = get_master_resume_content()
+            if not original_resume:
+                st.error("❌ Master resume not found. Please add master_resume.docx to your repository.")
+                st.stop()
+            
+            progress_bar.progress(60)
+            status_text.markdown("**✅ Step 2/3:** Master resume loaded!")
+            
+            # Step 3: Generate tailored resume
+            status_text.markdown("**✨ Step 3/3:** Generating tailored resume (30-60 seconds)...")
+            progress_bar.progress(65)
+            
+            tailored_resume = generate_tailored_resume(original_resume, job_analysis, additional_context, st.session_state.api_key)
+            
+            if tailored_resume:
+                progress_bar.progress(90)
+                status_text.markdown("**✅ Step 3/3:** Resume generated!")
                 
-                if tailored_resume:
-                    doc = create_docx_from_text(tailored_resume)
-                    doc_bytes = io.BytesIO()
-                    doc.save(doc_bytes)
-                    doc_bytes.seek(0)
-                    
-                    st.success("✅ Resume generated!")
-                    st.download_button(
-                        "⬇️ Download Word Document",
-                        doc_bytes.getvalue(),
-                        f"Resume_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx",
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
-                    st.balloons()
+                # Create document
+                doc = create_docx_from_text(tailored_resume)
+                doc_bytes = io.BytesIO()
+                doc.save(doc_bytes)
+                doc_bytes.seek(0)
+                
+                progress_bar.progress(100)
+                status_text.markdown("**🎉 Complete!** Your resume is ready to download.")
+                
+                st.success("✅ Resume generated successfully!")
+                st.download_button(
+                    "⬇️ Download Word Document",
+                    doc_bytes.getvalue(),
+                    f"Resume_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True
+                )
+                st.balloons()
+                
+                # Clear progress indicators after success
+                progress_bar.empty()
+                status_text.empty()
 
 # Features
 st.markdown("""
