@@ -262,25 +262,69 @@ def scrape_job_posting(url):
 def analyze_job_posting(job_content, api_key):
     """Analyze job posting with Claude"""
     client = anthropic.Anthropic(api_key=api_key)
-    prompt = f"""Analyze this job posting and extract:
-1. Job Title
-2. Key Required Skills (5-10)
-3. Required Experience
-4. Key Responsibilities (5-7)
-5. ATS Keywords (20-30)
+    prompt = f"""Analyze this job posting and extract requirements in a structured format.
 
-Job Posting:
-{job_content}"""
-    
+JOB POSTING:
+{job_content}
+
+Extract and organize as follows:
+
+1. JOB TITLE: [exact title from posting]
+
+2. COMPANY & LOCATION: [company name and location]
+
+3. MUST-HAVE REQUIREMENTS (Deal-breakers - usually 5-8 items):
+   List the absolute requirements for the role:
+   - Prior experience requirements
+   - Technical skills that are mandatory
+   - Industry experience required
+   - Regulatory/compliance requirements
+   - Education/certification requirements
+
+4. KEY RESPONSIBILITIES (Top 7-10 main duties):
+   List the primary job functions in order of importance
+
+5. TECHNICAL SKILLS REQUIRED (8-15 items):
+   - Software/systems
+   - Laboratory equipment/instruments
+   - Analytical techniques
+   - Technical competencies
+
+6. SOFT SKILLS & ATTRIBUTES:
+   - Work style (autonomous, collaborative, etc.)
+   - Personal qualities mentioned
+   - Communication requirements
+
+7. CRITICAL ATS KEYWORDS (20-30 keywords):
+   List exact phrases and terms from the job posting that should appear in resume:
+   - Job title variations
+   - Technical terminology
+   - Industry-specific terms
+   - Required qualifications
+   - Regulatory terms (GMP, GLP, FDA, etc.)
+   - Action words used in posting
+
+8. LOCATION DETAILS:
+   - Work location
+   - On-site/hybrid/remote
+   - Any relocation notes
+
+9. COMPANY BACKGROUND:
+   - Industry
+   - Company focus/mission if mentioned
+   - Team/department details
+
+Format your response clearly with headers and bullet points for easy parsing."""
+
     try:
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=2000,
+            max_tokens=3000,
             messages=[{"role": "user", "content": prompt}]
         )
         return message.content[0].text
     except Exception as e:
-        st.error(f"Error: {str(e)}")
+        st.error(f"Error analyzing job: {str(e)}")
         return None
 
 def extract_resume_content(uploaded_file):
@@ -293,69 +337,240 @@ def extract_resume_content(uploaded_file):
         return None
 
 def generate_tailored_resume(original_resume, job_analysis, additional_context, api_key):
-    """Generate tailored resume"""
+    """Generate tailored resume using Claude"""
     client = anthropic.Anthropic(api_key=api_key)
-    prompt = f"""Create a tailored resume:
+    
+    prompt = f"""You are an expert ATS resume writer and career strategist. Your job is to create a highly targeted resume that will get past ATS systems AND impress human hiring managers.
 
 ORIGINAL RESUME:
 {original_resume}
 
-JOB ANALYSIS:
+JOB REQUIREMENTS ANALYSIS:
 {job_analysis}
 
-CONTEXT:
+ADDITIONAL CONTEXT:
 {additional_context if additional_context else "None"}
 
-Requirements:
-- Incorporate keywords naturally
-- Emphasize relevant experience
-- Quantify achievements
-- ATS-friendly format
-- 1-2 pages
+====================
+CRITICAL INSTRUCTIONS
+====================
 
-Provide complete resume with: Header, Summary, Skills, Experience, Education."""
-    
+1. EXPERIENCE REORDERING (MOST IMPORTANT):
+   - Analyze which past role is MOST RELEVANT to this specific job
+   - Move the most relevant role to POSITION #1 in work experience, even if it's not the most recent
+   - This is critical for ATS ranking and human reviewer attention
+   - Keep dates accurate but reorder by strategic fit
+
+2. PROFESSIONAL SUMMARY REWRITE:
+   - Start with the EXACT job title from the posting (or closest match)
+   - Include the top 5-7 required qualifications from the job description
+   - Mention specific years of experience in the relevant specialty
+   - If candidate has experience in the same city/region as job, mention it
+   - Use confident, active language
+   - NO generic phrases like "detail-oriented professional" or "experienced technician"
+   - Make it laser-focused on THIS specific role
+
+3. KEYWORD DISCIPLINE (CRITICAL):
+   - ONLY use technical terms and keywords that appear in:
+     a) The job description, OR
+     b) The original resume
+   - DO NOT add new technical terms, industry buzzwords, or specialty areas not in either document
+   - DO NOT hallucinate skills like "microbiological analysis" or "food safety" unless in job posting
+   - When in doubt, use the EXACT wording from the job description
+
+4. ADDRESS EVERY JOB REQUIREMENT:
+   For each requirement in the job posting:
+   - If it's explicitly in the resume, emphasize it prominently
+   - If it's IMPLIED by existing experience, rephrase bullets to make it explicit
+   - If it's MISSING, create a new bullet that shows how existing experience relates to it
+   
+   Examples:
+   - Job needs "batch release testing" but resume says "finished product testing" 
+     → Change to "Execute final product testing to support batch release decisions"
+   - Job needs "laboratory setup" but resume doesn't mention it explicitly
+     → Add "Supported laboratory operationalization and equipment setup during facility expansion"
+
+5. BULLET POINT PRIORITIZATION:
+   Within each role, reorder bullets to put:
+   - Most relevant to THIS job's requirements = FIRST (top 3 bullets)
+   - Quantified achievements = MIDDLE
+   - General responsibilities = LAST
+   
+   Each bullet should start with a strong action verb and include metrics when possible.
+
+6. FORMATTING REQUIREMENTS:
+   - NO markdown formatting (no #, ##, **, etc.)
+   - Use UPPERCASE for section headers: PROFESSIONAL SUMMARY, WORK EXPERIENCE, EDUCATION
+   - Use clear line breaks between sections
+   - Bold job titles and company names (use proper Word formatting, not markdown)
+   - Bullet points with actual bullet characters (•), not dashes or asterisks
+   - Keep contact information in a single line at the top
+   - Professional, clean formatting suitable for Word document conversion
+
+7. LOCATION EMPHASIS:
+   - If job location matches any past role location, emphasize this connection
+   - Mention it in the summary if significant (e.g., "including Sydney-based pharmaceutical operations")
+
+8. REMOVE FLUFF:
+   - No "References available upon request" (assumed)
+   - No generic skills that aren't job-specific
+   - No outdated or irrelevant experience unless it shows progression
+   - Focus on last 10-15 years of experience
+
+9. ATS OPTIMIZATION:
+   - Use standard section headers ATS systems recognize
+   - Include job title keywords in summary
+   - Mirror language from job description throughout
+   - Avoid tables, text boxes, or complex formatting
+   - Use standard job title formats
+
+10. QUANTIFY EVERYTHING:
+    - Convert vague statements to specific metrics
+    - Add numbers, percentages, timeframes, volumes
+    - Examples: "Processed samples" → "Processed 80-100 samples daily"
+
+====================
+OUTPUT FORMAT
+====================
+
+Create a complete, professionally formatted resume with these sections in order:
+
+[CANDIDATE NAME - ALL CAPS]
+[Contact line: Location | Email | Phone | LinkedIn]
+
+PROFESSIONAL SUMMARY
+[3-4 sentences, laser-focused on this job, incorporating exact job title and top requirements]
+
+CORE COMPETENCIES
+[List 8-12 most relevant skills from job description that candidate possesses, in bullet format]
+
+WORK EXPERIENCE
+[Most relevant role FIRST, then others in order of relevance]
+
+For each role:
+Company Name | Location | Dates
+• [Bullet 1 - most relevant to job requirements]
+• [Bullet 2 - second most relevant]
+• [Bullet 3 - quantified achievement]
+• [Additional bullets as needed]
+
+EDUCATION
+[Degree]
+[Institution | Location | Dates]
+[GPA if strong and recent]
+
+CERTIFICATIONS & PROFESSIONAL DEVELOPMENT
+[Relevant certifications, licenses, training]
+
+[Optional: PROFESSIONAL ACHIEVEMENTS section if strong publications/awards]
+
+====================
+QUALITY CHECKLIST
+====================
+
+Before finalizing, verify:
+✓ Most relevant past role is listed FIRST in experience
+✓ Summary uses exact job title from posting
+✓ Every major job requirement is addressed somewhere in resume
+✓ No markdown formatting (no hashtags, asterisks for bold, etc.)
+✓ No technical terms added that aren't in job posting or original resume
+✓ Bullets prioritized by job relevance within each role
+✓ Location match mentioned if applicable
+✓ All dates and facts remain accurate
+✓ Quantified achievements prominently featured
+✓ ATS-friendly formatting throughout
+
+====================
+TONE & STYLE
+====================
+
+- Confident and accomplishment-focused
+- Industry-specific terminology from job posting
+- Active voice, strong action verbs
+- Concise but comprehensive
+- Professional without being stuffy
+- Results-oriented language
+
+Generate the complete resume now. Make it outstanding."""
+
     try:
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=4000,
+            max_tokens=6000,
             messages=[{"role": "user", "content": prompt}]
         )
         return message.content[0].text
     except Exception as e:
-        st.error(f"Error: {str(e)}")
+        st.error(f"Error generating resume: {str(e)}")
         return None
 
 def create_docx_from_text(resume_text):
-    """Create Word doc"""
+    """Create Word doc from resume text"""
     doc = Document()
+    
+    # Set margins
     for section in doc.sections:
         section.top_margin = Inches(0.5)
         section.bottom_margin = Inches(0.5)
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
     
-    for line in resume_text.split('\n'):
+    lines = resume_text.split('\n')
+    
+    for line in lines:
         line = line.strip()
         if not line:
             continue
-        is_header = line.isupper() or any(k in line.upper() for k in ['SUMMARY', 'EXPERIENCE', 'EDUCATION', 'SKILLS'])
-        is_name = len(doc.paragraphs) == 0
+        
+        # Remove any markdown formatting that might have slipped through
+        line = line.replace('**', '').replace('##', '').replace('#', '')
+        
+        # Detect section headers (all caps or specific keywords)
+        is_header = (
+            line.isupper() and len(line) > 3 or
+            line in ['PROFESSIONAL SUMMARY', 'CORE COMPETENCIES', 'TECHNICAL SKILLS', 
+                    'WORK EXPERIENCE', 'EDUCATION', 'CERTIFICATIONS', 'PROFESSIONAL ACHIEVEMENTS',
+                    'CERTIFICATIONS & PROFESSIONAL DEVELOPMENT', 'PROFESSIONAL DEVELOPMENT']
+        )
+        
+        # Detect name (first non-empty line)
+        is_name = len(doc.paragraphs) == 0 and not line.startswith('•') and not line.startswith('-')
+        
+        # Detect job titles (bold lines that aren't headers)
+        is_job_title = (
+            not is_header and 
+            not line.startswith('•') and 
+            not line.startswith('-') and
+            not '@' in line and
+            not '|' in line and
+            len(line.split()) < 8 and
+            any(word in line for word in ['Assistant', 'Specialist', 'Technician', 'Manager', 'Director', 'Coordinator', 'Analyst'])
+        )
+        
         para = doc.add_paragraph()
         run = para.add_run(line)
+        
         if is_name:
-            run.font.size = Pt(16)
+            run.font.size = Pt(18)
             run.bold = True
             para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         elif is_header:
             run.font.size = Pt(12)
             run.bold = True
+            run.font.color.rgb = RGBColor(31, 56, 100)  # Dark blue for headers
             para.space_before = Pt(12)
-        elif line.startswith('-') or line.startswith('•'):
+            para.space_after = Pt(6)
+        elif is_job_title:
+            run.font.size = Pt(11)
+            run.bold = True
+            para.space_before = Pt(6)
+        elif line.startswith('•') or line.startswith('-'):
             run.font.size = Pt(10)
             para.left_indent = Inches(0.25)
+            para.paragraph_format.space_after = Pt(2)
         else:
             run.font.size = Pt(10)
+    
     return doc
 
 # Initialize session state
